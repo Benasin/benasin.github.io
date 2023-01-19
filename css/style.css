@@ -419,7 +419,7 @@ body table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 12px;
+  font-size: 17px;
   overflow: auto;
   display: block;
 }
@@ -428,7 +428,7 @@ body th {
   border-bottom: 1px dashed #908d8d;
   color: #eee;
   font-weight: bold;
-  font-size: 13px;
+  font-size: 18px;
 }
 body td {
   padding: 0 8px;
@@ -482,7 +482,7 @@ body {
   color: #c9cacc;
   font-display: swap;
   font-weight: 400;
-  font-size: 14px;
+  font-size: 19px;
   font-family: "Menlo", "Meslo LG", monospace;
   line-height: 1.725;
   text-rendering: geometricPrecision;
@@ -1063,7 +1063,7 @@ body {
   margin-right: 16px;
   min-width: 100px;
   color: #908d8d;
-  font-size: 14px;
+  font-size: 19px;
 }
 @media (min-width: 480px) {
   .post-list .post-item {
@@ -1242,7 +1242,7 @@ article .content .caption {
   margin-right: 16px;
   min-width: 100px;
   color: #908d8d;
-  font-size: 14px;
+  font-size: 19px;
 }
 @media (min-width: 480px) {
   #archive .post-list .post-item {
@@ -1411,7 +1411,7 @@ article .content .caption {
   color: #1d1f21;
   font-display: swap;
   font-weight: 400;
-  font-size: 11.200000000000001px;
+  font-size: 15.200000000000001px;
   font-family: "Menlo", "Meslo LG", monospace;
   line-height: 1.725;
   text-rendering: geometricPrecision;
