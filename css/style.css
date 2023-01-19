@@ -1661,3 +1661,42 @@ code {
 .highlight .line {
   height: 22px;
 }
+.dash_blink::after {
+  content: "_";
+  animation: blink-animation 1s infinite;
+}
+@-moz-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@-webkit-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@-o-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@-moz-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@-webkit-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@-o-keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes blink-animation {
+  to {
+    opacity: 0;
+  }
+}
