@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="DescriptionI found a HTTP Request Smuggling vulnerability in OpenResty&#x2F;lua-nginx-module &lt;&#x3D; v0.10.26 which allows attackers to smuggle requests.  When processing HTTP&#x2F;1.1 requests, lu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OpenResty lua-nginx-module &lt;&#x3D; v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452">
+<meta property="og:url" content="https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/index.html">
+<meta property="og:site_name" content="Benasin&#39;s Space">
+<meta property="og:description" content="DescriptionI found a HTTP Request Smuggling vulnerability in OpenResty&#x2F;lua-nginx-module &lt;&#x3D; v0.10.26 which allows attackers to smuggle requests.  When processing HTTP&#x2F;1.1 requests, lu">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://www.benasin.space/images/1.png">
+<meta property="og:image" content="https://www.benasin.space/images/2.png">
+<meta property="og:image" content="https://www.benasin.space/images/3.png">
+<meta property="og:image" content="https://www.benasin.space/images/4.png">
+<meta property="og:image" content="https://www.benasin.space/images/5.png">
+<meta property="article:published_time" content="2025-03-18T03:33:07.000Z">
+<meta property="article:modified_time" content="2025-03-18T04:02:08.872Z">
+<meta property="article:author" content="Benasin">
+<meta property="article:tag" content="websec">
+<meta property="article:tag" content="0day">
+<meta property="article:tag" content="http-request-smuggling">
+<meta property="article:tag" content="server-side">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.benasin.space/images/1.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Posts</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Benasin">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2024/04/06/How-we-escalated-a-DOM-XSS-to-a-sophisticated-1-click-Account-Takeover-for-8000/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&text=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&is_video=false&description=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452&body=Check out this article: https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&name=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&t=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Description"><span class="toc-number">1.</span> <span class="toc-text">Description</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Steps-to-Reproduce"><span class="toc-number">2.</span> <span class="toc-text">Steps to Reproduce:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Attack-scenerios"><span class="toc-number">3.</span> <span class="toc-text">Attack scenerios:</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-scenario-1-Serving-XSS-Responses-to-all-victims"><span class="toc-number">3.1.</span> <span class="toc-text">Attack scenario 1: Serving XSS Responses to all victims</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-scenario-2-Bypassing-Front-end-proxies-protection-E-g-Cloudflare"><span class="toc-number">3.2.</span> <span class="toc-text">Attack scenario 2:  Bypassing Front-end proxies protection (E.g: Cloudflare)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-Example-3-Stealing-other-user%E2%80%99s-responses"><span class="toc-number">3.3.</span> <span class="toc-text">Attack Example 3:  Stealing other user’s responses</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Root-cause-analysis"><span class="toc-number">4.</span> <span class="toc-text">Root-cause analysis:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Impact"><span class="toc-number">5.</span> <span class="toc-text">Impact:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Discovery-x2F-Disclosure-Timeline"><span class="toc-number">6.</span> <span class="toc-text">Discovery&#x2F;Disclosure Timeline</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Benasin</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-03-18T03:33:07.000Z" itemprop="datePublished">2025-03-18</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/0day/" rel="tag">0day</a>, <a class="tag-link-link" href="/tags/http-request-smuggling/" rel="tag">http-request-smuggling</a>, <a class="tag-link-link" href="/tags/server-side/" rel="tag">server-side</a>, <a class="tag-link-link" href="/tags/websec/" rel="tag">websec</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="Description"><a href="#Description" class="headerlink" title="Description"></a>Description</h2><p>I found a HTTP Request Smuggling vulnerability in OpenResty&#x2F;<code>lua-nginx-module</code> &lt;&#x3D; v0.10.26 which allows attackers to smuggle requests. </p>
+<p>When processing HTTP&#x2F;1.1 requests, <code>lua-nginx-module</code> incorrectly parses <code>HEAD</code> requests with a body and treats the body as the new separate request. </p>
+<p>Normally for other proxies, the following request is treated as a single request because the GET &#x2F;smuggle request is inside of the <code>HEAD</code> request’s body.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">HEAD / HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">Content-Length: 52</span><br><span class="line"></span><br><span class="line">GET /smuggle HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>But when parsed by <code>lua-nginx-module</code> this request is treated as 2 separate requests. This leads to discrepancies between proxies if chained together. </p>
+<h2 id="Steps-to-Reproduce"><a href="#Steps-to-Reproduce" class="headerlink" title="Steps to Reproduce:"></a>Steps to Reproduce:</h2><ol>
+<li><p>Setup OpenResty&#x2F;<code>lua-nginx-module</code> like the following video<br><a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=eSfYLvVQMxw">https://www.youtube.com/watch?v=eSfYLvVQMxw</a></p>
+</li>
+<li><p>Send this request in Burp Suite.</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">HEAD / HTTP/1.1</span><br><span class="line">Host: 192.168.17.130:8000</span><br><span class="line">Content-Length: 52</span><br><span class="line"></span><br><span class="line">GET /smuggle HTTP/1.1</span><br><span class="line">Host: 192.168.17.130:8000</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p> <img src="/images/1.png" alt="Sending the smuggle request"><br> <img src="/images/2.png" alt="Log results"></p>
+<p> As you can see in the response, and the access log. There is a smuggled GET request even though we have only sent the <code>HEAD</code> request.</p>
+</li>
+</ol>
+<h2 id="Attack-scenerios"><a href="#Attack-scenerios" class="headerlink" title="Attack scenerios:"></a>Attack scenerios:</h2><p>I’ve observed that proxies which are implemented on top of <code>lua-nginx-module</code> also suffer from this issue (Kong Gateway, APISIX, …). Here are some attack scenarios to signify the impactfulness of this vulnerability:</p>
+<p>I will be using Kong Gateway as an example for my POCs. </p>
+<p>This is not a problem if Kong stands on its own at the front since it is just a normal HTTP pipelining behaviour. But, if Kong is chained with a front-end proxy (Nginx, Cloudflare, …) it would allow attackers to serve malicious responses and smuggle requests through the front-end proxies, which have persistent connection (keep-alive) to Kong. Let me explained how:</p>
+<p>As I have observed in many proxies, a <code>HEAD</code> request with a body will be treated as a single request, however when this request is passed to Kong gateway it would be treated as 2 separated pipelined requests (a <code>HEAD</code> request and a malicious request in the body) due to <code>lua-nginx-module</code> behaviour. This would leave the malicious request dangling in the response queue, and when another user sends a request that malicious response will be sent back to them.</p>
+<h3 id="Attack-scenario-1-Serving-XSS-Responses-to-all-victims"><a href="#Attack-scenario-1-Serving-XSS-Responses-to-all-victims" class="headerlink" title="Attack scenario 1: Serving XSS Responses to all victims"></a>Attack scenario 1: Serving XSS Responses to all victims</h3><p>I have set up another POC (in kong-xss folder) where the latest Nginx will be the front-end proxy, Kong as the API gateway, and a default Apache page with a single configuration to redirect &#x2F;assets to &#x2F;assets&#x2F; path.</p>
+<p>An attacker will be able to achieve XSS with this attack, even with a default Apache web page.</p>
+<p>XSS Smuggle Payload:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HEAD / HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">Content-Length: 122</span><br><span class="line"></span><br><span class="line">HEAD /app HTTP/1.1</span><br><span class="line">Host: localhost</span><br><span class="line">Connection: keep-alive</span><br><span class="line"></span><br><span class="line">GET /app/assets?&lt;script&gt;alert(origin)&lt;/script&gt; HTTP/1.1</span><br><span class="line">X:</span><br></pre></td></tr></table></figure>
+
+<div class="video-container"><iframe src="https://www.youtube.com/embed/Bu9MCmn063k" frameborder="0" loading="lazy" allowfullscreen></iframe></div>
+
+<h3 id="Attack-scenario-2-Bypassing-Front-end-proxies-protection-E-g-Cloudflare"><a href="#Attack-scenario-2-Bypassing-Front-end-proxies-protection-E-g-Cloudflare" class="headerlink" title="Attack scenario 2:  Bypassing Front-end proxies protection (E.g: Cloudflare)"></a>Attack scenario 2:  Bypassing Front-end proxies protection (E.g: Cloudflare)</h3><p>I have created an attack scenario where CloudFlare will be blocking requests to &#x2F;admin. However, an attacker can smuggle a GET &#x2F;admin request in a <code>HEAD</code> request’s body to bypass CloudFlare.</p>
+<p><img src="/images/3.png" alt="Bypassing Cloudflare"></p>
+<h3 id="Attack-Example-3-Stealing-other-user’s-responses"><a href="#Attack-Example-3-Stealing-other-user’s-responses" class="headerlink" title="Attack Example 3:  Stealing other user’s responses"></a>Attack Example 3:  Stealing other user’s responses</h3><p>This attack allows the attacker to desync the response queue and capture other user’s responses. Here is a visualization video on how this attack works:</p>
+<div class="video-container"><iframe src="https://www.youtube.com/embed/pbW871oCDlU" frameborder="0" loading="lazy" allowfullscreen></iframe></div>
+
+<h2 id="Root-cause-analysis"><a href="#Root-cause-analysis" class="headerlink" title="Root-cause analysis:"></a>Root-cause analysis:</h2><p>The vulnerability lives in <code>src/ngx_http_lua_util.c</code> file.</p>
+<p><img src="/images/4.png" alt="Vulnerable Code"></p>
+<ul>
+<li><code>ngx_http_lua_send_chain_link</code> is called when processing pipeline requests.</li>
+<li><code>ngx_http_discard_request_body</code> at line 614 instructs nginx to discard (read and ignore) the request body<br><img src="/images/5.png" alt="alt text"></li>
+<li><code>ngx_http_discard_request_body</code> will call <code>ngx_http_discard_request_body_filter</code> which will add next request to process pointer offset with the request’s Content-Length.</li>
+<li>However, at line 599, if method is <code>HEAD</code> <code>ngx_http_lua_send_chain_link</code> will returns before reaching <code>ngx_http_discard_request_body</code> and the request body will be treated as a new request. Causing the HTTP Request Smuggling issue!</li>
+</ul>
+<h2 id="Impact"><a href="#Impact" class="headerlink" title="Impact:"></a>Impact:</h2><p>The attacker can use this attack to bypass any frontend proxies protection and serve malicious responses to all the users in the same connection pool and capture responses of other users.</p>
+<h2 id="Discovery-x2F-Disclosure-Timeline"><a href="#Discovery-x2F-Disclosure-Timeline" class="headerlink" title="Discovery&#x2F;Disclosure Timeline"></a>Discovery&#x2F;Disclosure Timeline</h2><ul>
+<li>24&#x2F;01&#x2F;2024: Vulnerability reported to OpenResty</li>
+<li>09&#x2F;03&#x2F;2024: Patch provided by OpenResty in commit <a target="_blank" rel="noopener" href="https://github.com/openresty/lua-nginx-module/commit/e5248aa8203d3e0075822a577c1cdd19f5f1f831">e5248aa8203d3e0075822a577c1cdd19f5f1f831</a></li>
+<li>24&#x2F;04&#x2F;2024: CVE-2024-33452 assigned</li>
+</ul>
+
+  </div>
+</article>
+
+    <div class="blog-post-comments">
+        <div id="disqus_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Posts</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/Benasin">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Description"><span class="toc-number">1.</span> <span class="toc-text">Description</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Steps-to-Reproduce"><span class="toc-number">2.</span> <span class="toc-text">Steps to Reproduce:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Attack-scenerios"><span class="toc-number">3.</span> <span class="toc-text">Attack scenerios:</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-scenario-1-Serving-XSS-Responses-to-all-victims"><span class="toc-number">3.1.</span> <span class="toc-text">Attack scenario 1: Serving XSS Responses to all victims</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-scenario-2-Bypassing-Front-end-proxies-protection-E-g-Cloudflare"><span class="toc-number">3.2.</span> <span class="toc-text">Attack scenario 2:  Bypassing Front-end proxies protection (E.g: Cloudflare)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Attack-Example-3-Stealing-other-user%E2%80%99s-responses"><span class="toc-number">3.3.</span> <span class="toc-text">Attack Example 3:  Stealing other user’s responses</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Root-cause-analysis"><span class="toc-number">4.</span> <span class="toc-text">Root-cause analysis:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Impact"><span class="toc-number">5.</span> <span class="toc-text">Impact:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Discovery-x2F-Disclosure-Timeline"><span class="toc-number">6.</span> <span class="toc-text">Discovery&#x2F;Disclosure Timeline</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&text=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&is_video=false&description=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452&body=Check out this article: https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&title=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&name=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://www.benasin.space/2025/03/18/OpenResty-lua-nginx-module-v0-10-26-HTTP-Request-Smuggling-in-HEAD-requests/&t=OpenResty lua-nginx-module &lt;= v0.10.26 HTTP Request Smuggling in HEAD requests - CVE-2024-33452"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025
+    Benasin
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Posts</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Benasin">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<script src="/js/oneko.js"></script>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1N8C5LEM86"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-1N8C5LEM86');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+    <script type="text/javascript">
+        var disqus_shortname = 'benasin';
+
+        (function(){
+            var dsq = document.createElement('script');
+            dsq.type = 'text/javascript';
+            dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        }());
+    </script>
+
+<!-- utterances Comments -->
+
+</body>
+</html>
